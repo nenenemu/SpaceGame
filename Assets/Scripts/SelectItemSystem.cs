@@ -1,53 +1,33 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class CarouselManager : MonoBehaviour
 {
-    [Header("UI")]
-    [SerializeField]
-    RectTransform[] items;
+    [SerializeField] RectTransform[] items;
 
-    [Header("Layout")]
-    [SerializeField]
-    float spacing = 300f;
+    [SerializeField] float spacing = 300f;
+    [SerializeField] float yPosition = 0f;
 
-    [SerializeField]
-    float yPosition = 0f;
-
-    [Header("Loop")]
-    [SerializeField]
-    float loopX = 1000f;
-
-    [Header("Movement")]
-    [SerializeField]
-    float moveSpeed = 10f;
-
-    [SerializeField]
-    float scrollSpeed = 300f;
+    [SerializeField] float moveSpeed = 10f;
 
     [Header("Scale")]
-    [SerializeField]
-    float selectedScale = 1.3f;
+    [SerializeField] float normalScale = 1f;
+    [SerializeField] float selectedScale = 1.3f;
+    [SerializeField] float scaleSpeed = 10f;
 
-    [SerializeField]
-    float normalScale = 1f;
+    float targetOffset = 0f;
+    float currentOffset = 0f;
 
-    float startX;
+    float totalWidth;
 
     void Start()
     {
-        // ‘S‘Ì•
-        float totalWidth = (items.Length - 1) * spacing;
+        totalWidth = items.Length * spacing;
 
-        // ’†‰›Šî€
-        startX = -totalWidth / 2f;
+        float startX = -((items.Length - 1) * spacing) / 2f;
 
-        // š‹ô”•â³i‚±‚±‚ªd—vj
         if (items.Length % 2 == 0)
-        {
             startX += spacing / 2f;
-        }
 
-        // ‰Šú”z’u
         for (int i = 0; i < items.Length; i++)
         {
             float x = startX + i * spacing;
@@ -64,61 +44,39 @@ public class CarouselManager : MonoBehaviour
 
     void InputMove()
     {
-        float dir = 0f;
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+            targetOffset -= spacing;
 
-        if (Input.GetKey(KeyCode.RightArrow))
-            dir = -1f;
-
-        if (Input.GetKey(KeyCode.LeftArrow))
-            dir = 1f;
-
-        for (int i = 0; i < items.Length; i++)
-        {
-            Vector2 pos = items[i].anchoredPosition;
-
-            pos.x += dir * scrollSpeed * Time.deltaTime;
-
-            items[i].anchoredPosition = pos;
-        }
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+            targetOffset += spacing;
     }
 
     void MoveItems()
     {
-        float totalWidth = spacing * items.Length;
+        currentOffset = Mathf.Lerp(
+            currentOffset,
+            targetOffset,
+            Time.deltaTime * moveSpeed
+        );
+
+        float half = totalWidth / 2f;
 
         for (int i = 0; i < items.Length; i++)
         {
-            Vector2 pos = items[i].anchoredPosition;
+            float x = (i * spacing + currentOffset);
 
-            float targetX = pos.x;
+            x = Mathf.Repeat(x + half, totalWidth) - half;
 
-            // ‚È‚ß‚ç‚©•âŠÔiŒy‚¢’Ç]j
-            pos.x = Mathf.Lerp(pos.x, targetX, Time.deltaTime * moveSpeed);
-
-            // ‰E‚És‚«‚·‚¬‚½‚ç¶‚Ö
-            if (pos.x > loopX)
-            {
-                pos.x -= totalWidth;
-            }
-
-            // ¶‚És‚«‚·‚¬‚½‚ç‰E‚Ö
-            if (pos.x < -loopX)
-            {
-                pos.x += totalWidth;
-            }
-
-            pos.y = yPosition;
-
-            items[i].anchoredPosition = pos;
+            items[i].anchoredPosition = new Vector2(x, yPosition);
         }
     }
 
     void UpdateScale()
     {
-        // ˆê”Ô’†‰›‚É‹ß‚¢‚â‚Â‚ğ‘I‘ğˆµ‚¢
         int closestIndex = 0;
         float closestDist = float.MaxValue;
 
+        // ä¸­å¤®ã«ä¸€ç•ªè¿‘ã„ã‚„ã¤ã‚’æ¢ã™
         for (int i = 0; i < items.Length; i++)
         {
             float dist = Mathf.Abs(items[i].anchoredPosition.x);
@@ -130,6 +88,7 @@ public class CarouselManager : MonoBehaviour
             }
         }
 
+        // ã‚¹ã‚±ãƒ¼ãƒ«é©ç”¨
         for (int i = 0; i < items.Length; i++)
         {
             float target = (i == closestIndex)
@@ -139,7 +98,7 @@ public class CarouselManager : MonoBehaviour
             items[i].localScale = Vector3.Lerp(
                 items[i].localScale,
                 Vector3.one * target,
-                Time.deltaTime * moveSpeed
+                Time.deltaTime * scaleSpeed
             );
         }
     }
