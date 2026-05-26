@@ -2,11 +2,14 @@
 
 public class CarouselManager : MonoBehaviour
 {
+    [Header("UI")]
     [SerializeField] RectTransform[] items;
 
+    [Header("Layout")]
     [SerializeField] float spacing = 300f;
     [SerializeField] float yPosition = 0f;
 
+    [Header("Movement")]
     [SerializeField] float moveSpeed = 10f;
 
     [Header("Scale")]
@@ -19,19 +22,34 @@ public class CarouselManager : MonoBehaviour
 
     float totalWidth;
 
+    // 元サイズ保存
+    Vector2[] baseSize;
+
     void Start()
     {
         totalWidth = items.Length * spacing;
 
+        // 元サイズ配列作成
+        baseSize = new Vector2[items.Length];
+
+        // 中央配置
         float startX = -((items.Length - 1) * spacing) / 2f;
 
+        // 偶数補正
         if (items.Length % 2 == 0)
             startX += spacing / 2f;
 
         for (int i = 0; i < items.Length; i++)
         {
+            // 初期X座標
             float x = startX + i * spacing;
-            items[i].anchoredPosition = new Vector2(x, yPosition);
+
+            // 配置
+            items[i].anchoredPosition =
+                new Vector2(x, yPosition);
+
+            // 元サイズ保存
+            baseSize[i] = items[i].sizeDelta;
         }
     }
 
@@ -44,15 +62,22 @@ public class CarouselManager : MonoBehaviour
 
     void InputMove()
     {
+        // 右
         if (Input.GetKeyDown(KeyCode.RightArrow))
+        {
             targetOffset -= spacing;
+        }
 
+        // 左
         if (Input.GetKeyDown(KeyCode.LeftArrow))
+        {
             targetOffset += spacing;
+        }
     }
 
     void MoveItems()
     {
+        // スムーズ移動
         currentOffset = Mathf.Lerp(
             currentOffset,
             targetOffset,
@@ -63,23 +88,31 @@ public class CarouselManager : MonoBehaviour
 
         for (int i = 0; i < items.Length; i++)
         {
-            float x = (i * spacing + currentOffset);
+            // 基本位置
+            float x = (i * spacing) + currentOffset;
 
-            x = Mathf.Repeat(x + half, totalWidth) - half;
+            // 無限ループ
+            x = Mathf.Repeat(
+                x + half,
+                totalWidth
+            ) - half;
 
-            items[i].anchoredPosition = new Vector2(x, yPosition);
+            items[i].anchoredPosition =
+                new Vector2(x, yPosition);
         }
     }
 
     void UpdateScale()
     {
         int closestIndex = 0;
+
         float closestDist = float.MaxValue;
 
-        // 中央に一番近いやつを探す
+        // 中央に一番近いUI探す
         for (int i = 0; i < items.Length; i++)
         {
-            float dist = Mathf.Abs(items[i].anchoredPosition.x);
+            float dist =
+                Mathf.Abs(items[i].anchoredPosition.x);
 
             if (dist < closestDist)
             {
@@ -88,16 +121,23 @@ public class CarouselManager : MonoBehaviour
             }
         }
 
-        // スケール適用
+        // サイズ変更
         for (int i = 0; i < items.Length; i++)
         {
-            float target = (i == closestIndex)
+            // 選択中だけ倍率変更
+            float targetScale =
+                (i == closestIndex)
                 ? selectedScale
                 : normalScale;
 
-            items[i].localScale = Vector3.Lerp(
-                items[i].localScale,
-                Vector3.one * target,
+            // 元サイズ基準で拡大
+            Vector2 targetSize =
+                baseSize[i] * targetScale;
+
+            // スムーズサイズ変更
+            items[i].sizeDelta = Vector2.Lerp(
+                items[i].sizeDelta,
+                targetSize,
                 Time.deltaTime * scaleSpeed
             );
         }
